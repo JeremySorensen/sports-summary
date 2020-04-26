@@ -7,7 +7,7 @@
 #include "Display.hpp"
 
 using std::vector;
-;
+
 const int FLOATS_PER_QUAD = 16; // 4 x,y points + 4 s,t points
 const int QUADS_IN_FRAME = 8;
 const int INDICES_PER_QUAD = 6;
@@ -309,12 +309,34 @@ void Display::draw(int selected_item_id) {
 
 	update_geometry(selected_item_id);
 
+	bool rebuffer_geometry = false;
+	if (floats.size() > old_num_floats) {
+		old_num_floats = floats.size();
+		rebuffer_geometry = true;
+	}
+
+	bool rebuffer_text = false;
+	if (text_floats.size() > old_num_text_floats) {
+		old_num_floats = floats.size();
+		rebuffer_text = true;
+	}
+
 	// Draw geometry
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, floats.size() * sizeof(float), floats.data(), GL_DYNAMIC_DRAW);
+	if (rebuffer_geometry) {
+		glBufferData(GL_ARRAY_BUFFER, floats.size() * sizeof(float), floats.data(), GL_DYNAMIC_DRAW);
+	}
+	else {
+		glBufferSubData(GL_ARRAY_BUFFER, 0, floats.size() * sizeof(float), floats.data());
+	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_DYNAMIC_DRAW);
+	if (rebuffer_geometry) {
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
+	}
+	else {
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(unsigned int), indices.data());
+	}
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
 	glEnableVertexAttribArray(0);
@@ -325,16 +347,25 @@ void Display::draw(int selected_item_id) {
 	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
 	glUseProgram(shader_program);
-	glBindVertexArray(vao);
 
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
 
 	// Draw Text
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, text_floats.size() * sizeof(float), text_floats.data(), GL_DYNAMIC_DRAW);
+	if (rebuffer_text) {
+		glBufferData(GL_ARRAY_BUFFER, text_floats.size() * sizeof(float), text_floats.data(), GL_DYNAMIC_DRAW);
+	}
+	else {
+		glBufferSubData(GL_ARRAY_BUFFER, 0, text_floats.size() * sizeof(float), text_floats.data());
+	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[0]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, text_indices.size() * sizeof(float), text_indices.data(), GL_DYNAMIC_DRAW);
+	if (rebuffer_text) {
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, text_indices.size() * sizeof(unsigned int), text_indices.data(), GL_DYNAMIC_DRAW);
+	}
+	else {
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, text_indices.size() * sizeof(unsigned int), text_indices.data());
+	}
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
 	glEnableVertexAttribArray(0);
@@ -344,7 +375,7 @@ void Display::draw(int selected_item_id) {
 
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
 
-	glUseProgram(shader_program);
+	//glUseProgram(shader_program);
 	//glBindVertexArray(vao);
 
 	glDrawElements(GL_TRIANGLES, text_indices.size(), GL_UNSIGNED_INT, nullptr);

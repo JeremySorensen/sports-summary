@@ -24,6 +24,9 @@ class Display {
 	GLuint texture_id[2];
 	GLuint shader_program;
 
+	int old_num_floats = 0;
+	int old_num_text_floats = 0;
+
 	void update_geometry(int selected_item);
 
 	float float_x(float x) {

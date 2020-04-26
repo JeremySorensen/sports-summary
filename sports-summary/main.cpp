@@ -1,8 +1,10 @@
 #include <iostream>
+#include <ctime>
 #include <gsl/gsl>
 #include "gl.h"
 #include "Display.hpp"
 #include "errors.hpp"
+#include "Json.hpp"
 
 struct Info {
     int num_ids;
@@ -66,17 +68,42 @@ int main()
     ImageManager image_manager("texture.jpg");
     TextManager text_manager("text_atlas.png");
 
-    std::vector<DisplayItem> items{
-        {0, " !\"#$%&'()*+,-./", "Game zero", 0},
-        {1, "0123456789", "Game one", 1},
-        {2, ":;<=>?@", "Game two", 2},
-        {3, "ABCDEFGHIJKLMN", "Game three", 3},
-        {4, "OPQRSTUVWXYZ", "Game four", 4},
-        {5, "[\]^_`", "Game five", 5},
-        {6, "abcdefghijklmn", "Game six", 6},
-        {7, "opqrstuvwxyz", "Game seven", 7},
-        {8, "{|}~", "Game eight", 8},
-    };
+    time_t rawtime;
+    tm timeinfo;
+    char buffer[11];
+
+    time(&rawtime);
+    localtime_s(&timeinfo, &rawtime);
+
+    strftime(buffer, 80, "%F", &timeinfo);
+
+    std::string date_string{ buffer };
+
+    // no pictures today, use old date
+    date_string = "2018-06-10";
+
+    Json json;
+    auto games = json.get_games(date_string);
+
+    std::vector<DisplayItem> items;
+    items.reserve(games.size());
+
+    int id = 0;
+    for (auto&& game : games) {
+
+        std::string headline;
+        if (game.did_home_win) {
+            headline = game.home_team + " beat " + game.away_team + " at home " 
+                + std::to_string(game.home_score) + "-" + std::to_string(game.away_score);
+        }
+        else {
+            headline = game.away_team + " win " + std::to_string(game.away_score) + "-"
+                + std::to_string(game.home_score) + " at " + game.home_team;
+        }
+
+        items.push_back({ id, headline, game.blurb, id });
+        ++id;
+    }
 
     Display display{ image_manager, text_manager, items, width, height };
 
