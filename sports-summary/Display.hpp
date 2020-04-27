@@ -2,19 +2,24 @@
 
 #include <vector>
 #include <functional>
-#include "ImageManager.hpp"
-#include "TextManager.hpp"
 #include "Image.hpp"
 #include "DisplayItem.hpp"
 #include "Bounds.hpp"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
+#include "TextManager.hpp"
+#include "ImageManager.hpp"
+#include "OpenGlDrawer.hpp"
 
 class Display {
-	const ImageManager& image_manager;
-	const TextManager& text_manager;
-	int texture_revision = -1;
+
+	struct TextLocations {
+		float text_x;
+		int top_text_y;
+		int bot_text_y;
+	};
+
+	OpenGlDrawer& drawer;
+	TextManager& text_manager;
+	ImageManager& image_manager;
 	std::vector<DisplayItem> items;
 	std::vector<float> floats;
 	std::vector<unsigned int> indices;
@@ -22,16 +27,12 @@ class Display {
 	std::vector<unsigned int> text_indices;
 	int width;
 	int height;
-	GLuint vao;
-	GLuint vbo[2];
-	GLuint ebo[2];
-	GLuint texture_id[2];
-	GLuint shader_program;
 
-	size_t old_num_floats = 0;
-	size_t old_num_text_floats = 0;
 
-	void update_geometry(int selected_item);
+
+	TextLocations update_geometry(int selected_item);
+
+	void update_text(int selected_item, TextLocations locations);
 
 	float float_x(float x) {
 		return x / (width / 2) - 1.0f;
@@ -101,8 +102,9 @@ class Display {
 
 public:
 	Display(
-		const ImageManager& image_manager,
-		const TextManager& text_manager,
+		OpenGlDrawer& drawer,
+		TextManager& text_manager,
+		ImageManager& image_manager,
 		int width,
 		int height);
 

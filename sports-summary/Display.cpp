@@ -1,6 +1,5 @@
 #include <vector>
 #include <gsl/gsl>
-#include "build_shaders.hpp"
 #include "load_texture.hpp"
 #include "errors.hpp"
 #include "Display.hpp"
@@ -18,11 +17,12 @@ const int TEXT_PAD = 4;
 const int EXTRA_SELECTED_WIDTH = 2 * (FRAME_WIDTH + FRAME_PAD);
 
 Display::Display(
-	const ImageManager& image_manager,
-	const TextManager& text_manager,
+	OpenGlDrawer& drawer,
+	TextManager& text_manager,
+	ImageManager& image_manager,
 	int width,
 	int height):
-    image_manager(image_manager), text_manager(text_manager), width(width), height(height) {
+    drawer(drawer), text_manager(text_manager), image_manager(image_manager), width(width), height(height) {
 
 	items.push_back({ 0, "Getting your scores", "", 0 });
 
@@ -30,44 +30,9 @@ Display::Display(
 	{
 		ui_error("Error loading OpenGL", __FILE__, __LINE__);
 	}
-
-	shader_program = build_shaders("shaders/vertex.glsl", "shaders/fragment.glsl");
-
-	glViewport(0, 0, width, height);
-
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(2, vbo);
-	glGenBuffers(2, ebo);
-	glGenTextures(2, texture_id);
-
-	// Text setup
-
-	glBindVertexArray(vao);
-
-	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	auto texture = text_manager.get_texture();
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bytes.data());
-
-	// Geometry setup
-
-	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void Display::update_geometry(int selected_item_id) {
+Display::TextLocations Display::update_geometry(int selected_item_id) {
 	int selected_item_width = ImageManager::get_cut_width();
 	int selected_item_height = ImageManager::get_cut_height();
 
@@ -268,14 +233,19 @@ void Display::update_geometry(int selected_item_id) {
 		);
 	}
 
+	return TextLocations{ frame_out_left_px, frame_out_top_px, frame_out_bot_px };
+}
+
+void Display::update_text(int selected_item_id, TextLocations locations) {
+		
 	// Headline text
 
-	int headline_bot_px = frame_out_top_px + TEXT_PAD;
+	int headline_bot_px = locations.top_text_y + TEXT_PAD;
 	float headline_top_px = headline_bot_px + text_manager.get_glyph_height();
 	float headline_bot = float_y(headline_bot_px);
 	float headline_top = float_y(headline_top_px);
-	float glyph_left_px = frame_out_left_px;
-	index = 0;
+	float glyph_left_px = locations.text_x;
+	int index = 0;
 	for (auto&& glyph : items[selected_item_id].headline) { 
 		float glyph_right_px = glyph_left_px + text_manager.get_glyph_width(glyph);
 		index = add_text_quad(
@@ -286,12 +256,12 @@ void Display::update_geometry(int selected_item_id) {
 		glyph_left_px = glyph_right_px;
 	}
 
-	// Longer text
-	int text_top_px = frame_out_bot_px - TEXT_PAD;
+	// Blurb text
+	int text_top_px = locations.bot_text_y - TEXT_PAD;
 	float text_bot_px = text_top_px - text_manager.get_glyph_height();
 	float text_top = float_y(text_top_px);
 	float text_bot = float_y(text_bot_px);
-	glyph_left_px = frame_out_left_px;
+	glyph_left_px = locations.text_x;
 	for (auto&& glyph : items[selected_item_id].text) {
 		float glyph_right_px = glyph_left_px + text_manager.get_glyph_width(glyph);
 		index = add_text_quad(
@@ -305,83 +275,8 @@ void Display::update_geometry(int selected_item_id) {
 
 void Display::draw(int selected_item_id) {
 
-	update_geometry(selected_item_id);
+	auto locations = update_geometry(selected_item_id);
+	update_text(selected_item_id, locations);
 
-	bool rebuffer_geometry = false;
-	if (floats.size() > old_num_floats) {
-		old_num_floats = floats.size();
-		rebuffer_geometry = true;
-	}
-
-	bool rebuffer_text = false;
-	if (text_floats.size() > old_num_text_floats) {
-		old_num_text_floats = text_floats.size();
-		rebuffer_text = true;
-	}
-
-	// Draw geometry
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	if (rebuffer_geometry) {
-		glBufferData(GL_ARRAY_BUFFER, floats.size() * sizeof(float), floats.data(), GL_DYNAMIC_DRAW);
-	}
-	else {
-		glBufferSubData(GL_ARRAY_BUFFER, 0, floats.size() * sizeof(float), floats.data());
-	}
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[1]);
-	if (rebuffer_geometry) {
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
-	}
-	else {
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(unsigned int), indices.data());
-	}
-
-	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
-
-	if (image_manager.get_revision() != texture_revision) {
-		texture_revision = image_manager.get_revision();
-
-		auto texture = image_manager.get_texture();
-		
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.bytes.data());
-	}
-
-	glUseProgram(shader_program);
-
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
-
-	// Draw Text
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	if (rebuffer_text) {
-		glBufferData(GL_ARRAY_BUFFER, text_floats.size() * sizeof(float), text_floats.data(), GL_DYNAMIC_DRAW);
-	}
-	else {
-		glBufferSubData(GL_ARRAY_BUFFER, 0, text_floats.size() * sizeof(float), text_floats.data());
-	}
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[0]);
-	if (rebuffer_text) {
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, text_indices.size() * sizeof(unsigned int), text_indices.data(), GL_DYNAMIC_DRAW);
-	}
-	else {
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, text_indices.size() * sizeof(unsigned int), text_indices.data());
-	}
-
-	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
-
-	glUseProgram(shader_program);
-
-	glDrawElements(GL_TRIANGLES, text_indices.size(), GL_UNSIGNED_INT, nullptr);
+	drawer.draw(floats, text_floats, indices, text_indices, image_manager);
 }

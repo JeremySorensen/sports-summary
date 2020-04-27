@@ -202,7 +202,7 @@ copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
     <ClCompile Include="get_games_from_json.cpp" />
     <ClCompile Include="load_image.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="build_shaders.cpp" />
+    <ClCompile Include="OpenGlDrawer.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -216,7 +216,7 @@ copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
     <ClInclude Include="ImageManager.hpp" />
     <ClInclude Include="get_games_from_json.hpp" />
     <ClInclude Include="load_image.hpp" />
-    <ClInclude Include="build_shaders.hpp" />
+    <ClInclude Include="OpenGlDrawer.hpp" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextManager.hpp" />
     <ClInclude Include="TextureManager.hpp" />

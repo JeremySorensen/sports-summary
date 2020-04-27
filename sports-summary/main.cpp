@@ -9,6 +9,7 @@
 #include "Downloader.hpp"
 #include "get_games_from_json.hpp"
 #include "Display.hpp"
+#include "OpenGlDrawer.hpp"
 
 using std::string;
 using std::vector;
@@ -46,7 +47,6 @@ int main()
     string url_suffix = "&sportId=1";
     string url = url_start + date_string + url_suffix;
 
-
     glfwInit();
     auto glfw_terminator = gsl::finally([] { glfwTerminate(); });
 
@@ -82,7 +82,10 @@ int main()
 
     ImageManager image_manager("texture.jpeg");
     TextManager text_manager("text_atlas.png");
-    Display display{ image_manager, text_manager, width, height };
+
+    OpenGlDrawer drawer(width, height, text_manager.get_texture());
+
+    Display display(drawer, text_manager, image_manager, width, height);
     display.draw(0);
 
     glfwSwapBuffers(window);
