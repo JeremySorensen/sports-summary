@@ -22,7 +22,7 @@ class Display {
 	std::vector<unsigned int> text_indices;
 	int width;
 	int height;
-	GLuint vao[2];
+	GLuint vao;
 	GLuint vbo[2];
 	GLuint ebo[2];
 	GLuint texture_id[2];

@@ -35,24 +35,29 @@ Display::Display(
 
 	glViewport(0, 0, width, height);
 
-	glGenVertexArrays(2, vao);
+	glGenVertexArrays(1, &vao);
 	glGenBuffers(2, vbo);
 	glGenBuffers(2, ebo);
-	glBindVertexArray(vao[0]);
-
 	glGenTextures(2, texture_id);
+
+	// Text setup
+
+	glBindVertexArray(vao);
+
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	auto texture = text_manager.get_texture();
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bytes.data());
+
+	// Geometry setup
 
 	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
@@ -90,6 +95,7 @@ void Display::update_geometry(int selected_item_id) {
 	size_t num_text_rects = num_headline_rects + num_long_text_rects;
 	size_t num_text_floats = num_text_rects * FLOATS_PER_QUAD;
 	text_floats.clear();
+	text_indices.clear();
 	if (num_text_floats > text_floats.size()) {
 		text_floats.reserve(num_text_floats);
 		text_indices.reserve(num_text_rects * INDICES_PER_QUAD);
@@ -286,7 +292,6 @@ void Display::update_geometry(int selected_item_id) {
 	float text_top = float_y(text_top_px);
 	float text_bot = float_y(text_bot_px);
 	glyph_left_px = frame_out_left_px;
-	index = 0;
 	for (auto&& glyph : items[selected_item_id].text) {
 		float glyph_right_px = glyph_left_px + text_manager.get_glyph_width(glyph);
 		index = add_text_quad(
@@ -315,7 +320,6 @@ void Display::draw(int selected_item_id) {
 	}
 
 	// Draw geometry
-	glBindVertexArray(vao[1]);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 	if (rebuffer_geometry) {
 		glBufferData(GL_ARRAY_BUFFER, floats.size() * sizeof(float), floats.data(), GL_DYNAMIC_DRAW);
@@ -323,6 +327,12 @@ void Display::draw(int selected_item_id) {
 	else {
 		glBufferSubData(GL_ARRAY_BUFFER, 0, floats.size() * sizeof(float), floats.data());
 	}
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[1]);
 	if (rebuffer_geometry) {
@@ -332,28 +342,21 @@ void Display::draw(int selected_item_id) {
 		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(unsigned int), indices.data());
 	}
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
 	if (image_manager.get_revision() != texture_revision) {
 		texture_revision = image_manager.get_revision();
 
 		auto texture = image_manager.get_texture();
-		glBindTexture(GL_TEXTURE_2D, texture_id[1]);
+		
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.bytes.data());
 	}
-
-	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
 	glUseProgram(shader_program);
 
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
 
 	// Draw Text
-	glBindVertexArray(vao[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	if (rebuffer_text) {
 		glBufferData(GL_ARRAY_BUFFER, text_floats.size() * sizeof(float), text_floats.data(), GL_DYNAMIC_DRAW);
@@ -362,6 +365,12 @@ void Display::draw(int selected_item_id) {
 		glBufferSubData(GL_ARRAY_BUFFER, 0, text_floats.size() * sizeof(float), text_floats.data());
 	}
 
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[0]);
 	if (rebuffer_text) {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, text_indices.size() * sizeof(unsigned int), text_indices.data(), GL_DYNAMIC_DRAW);
@@ -369,12 +378,6 @@ void Display::draw(int selected_item_id) {
 	else {
 		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, text_indices.size() * sizeof(unsigned int), text_indices.data());
 	}
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
 
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
 
