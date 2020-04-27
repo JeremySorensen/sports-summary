@@ -1,3 +1,8 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// These structures store image data and size, either with and alpha channel
+// or without.
+
 #pragma once
 
 #include <vector>

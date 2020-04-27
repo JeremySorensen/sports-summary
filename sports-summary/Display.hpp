@@ -1,3 +1,16 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// The Display class handles figuring out the vertices and texture coordinates
+// for all the geometry.
+// The word geometry is misused a little to mean non-text geometry.
+// Everything is a quad.
+// Each floating point value (2 per vertex) for the (non-text) geometry is
+// stored int 'floats', the indices are stored in 'indices'. Each floating
+// point value for the text quads is stored in 'text_floats' and the indices in
+// 'text_indices'. This class handles the actual drawing by delegating to the
+// OpenGlDrawer.
+
+
 #pragma once
 
 #include <vector>
@@ -27,8 +40,6 @@ class Display {
 	std::vector<unsigned int> text_indices;
 	int width;
 	int height;
-
-
 
 	TextLocations update_geometry(int selected_item);
 

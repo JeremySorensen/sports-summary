@@ -1,3 +1,13 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// Main entry point. All the GLFW code is here, after setting everything up,
+// The main loop does two things. It keeps polling the downloader to download
+// the individual game images. It also responds to user input and calls the
+// display code and swaps the buffers. While there are files to download,
+// glfwWaitEventsTimeout is used to give ~60 fps. Once they are all downloaded,
+// there is no reason to redraw except in response to input, so glfwWaitEvents
+// is used instead.
+
 #include <iostream>
 #include <string>
 #include <gsl/gsl>
@@ -132,17 +142,28 @@ int main()
             for (int image_id : downloader.get_finished_files()) {
                 image_manager.add_jpeg(image_id, image_buffers[image_id]);
                 images_left.erase(image_id);
+                // don't need the buffer anymore
+                image_buffers[image_id].clear();
             }
             ++try_again;
             if (try_again == NUM_TRIES) {
-                for (int id : images_left) {
-                    if (image_buffers[id].size() > 1000) {
-                        image_manager.add_jpeg(id, image_buffers[id]);
+                for (int image_id : images_left) {
+                    if (image_buffers[image_id].size() > 1000) {
+                        image_manager.add_jpeg(image_id, image_buffers[image_id]);
                     }
+                    // don't need the buffer anymore
+                    image_buffers[image_id].clear();
                 }
+                // clean up
+                image_buffers.clear();
+                downloader.cleanup();
             }
+            glfwWaitEventsTimeout(0.15);
         }
-        glfwWaitEventsTimeout(0.15);
+        else {
+            glfwWaitEvents();
+        }
+        
 
         display.draw(info.current_id);
 

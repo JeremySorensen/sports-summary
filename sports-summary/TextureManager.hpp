@@ -1,8 +1,15 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// This class handles inserting 'cuts' which are the individual images for
+// each game. The original texture is loaded, and then extended to 2048x2048
+// (for convenience the original image is 2048 pixels wide already). Each new
+// image is inserted by overwriting blank bytes. Each time a new image is added
+// a revision value is incremeneted, which can be checked to see if the texture
+// needs to be sent to the GPU again.
+
 #pragma once
 #include <cstdint>
-#include <unordered_map>
 #include <optional>
-#include <gsl/gsl>
 #include <fstream>
 #include "load_image.hpp"
 #include "Image.hpp"

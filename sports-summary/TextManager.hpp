@@ -1,3 +1,8 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// This class holds the texture data for the text, and provides the texture
+// coordinates for the text. The text texture has transparencey.
+
 #pragma once
 
 #include <vector>

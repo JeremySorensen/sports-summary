@@ -1,3 +1,11 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// Errors used by this software. Currently there isn't much error handling.
+// Most of these erros are unrecoverable, such as library init errors,
+// not being able to load local files, and bugs. One recoverable error
+// would be the Download error, but currently it is not handled.
+// There are helper functions to throw the errors.
+
 #pragma once
 
 #include <exception>

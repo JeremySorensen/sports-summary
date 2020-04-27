@@ -1,3 +1,10 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// This class manages the large texture that holds the background, frame
+// texture and all the 'cuts' which are the images for each game.
+// Inserting the cuts delegated to the TextureManager, but this class provides
+// the texture coordinates for all the non-text geometry.
+
 #pragma once
 
 #include <vector>

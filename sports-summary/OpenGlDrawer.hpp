@@ -1,3 +1,7 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// This class manages pretty much all the OpenGl setup and drawing.
+
 #pragma once
 
 #include <glad/glad.h>

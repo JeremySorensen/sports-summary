@@ -1,3 +1,7 @@
+// Copyright 2020 Jeremy Sorensen
+// This code is subject to the GPL3 license. See LICENSE file for details.
+// See header file for more information.
+
 #include <fstream>
 #include <iostream>
 #include <ctime>
