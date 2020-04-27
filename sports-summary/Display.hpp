@@ -1,11 +1,15 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 #include "ImageManager.hpp"
 #include "TextManager.hpp"
 #include "Image.hpp"
 #include "DisplayItem.hpp"
 #include "Bounds.hpp"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 
 class Display {
 	const ImageManager& image_manager;
@@ -18,22 +22,30 @@ class Display {
 	std::vector<unsigned int> text_indices;
 	int width;
 	int height;
-	GLuint vao;
+	GLuint vao[2];
 	GLuint vbo[2];
 	GLuint ebo[2];
 	GLuint texture_id[2];
 	GLuint shader_program;
 
-	int old_num_floats = 0;
-	int old_num_text_floats = 0;
+	size_t old_num_floats = 0;
+	size_t old_num_text_floats = 0;
 
 	void update_geometry(int selected_item);
 
 	float float_x(float x) {
-		return float(x) / (width / 2) - 1.0f;
+		return x / (width / 2) - 1.0f;
 	}
 
 	float float_y(float y) {
+		return y / (height / 2) - 1.0f;
+	}
+
+	float float_x(int x) {
+		return float(x) / (width / 2) - 1.0f;
+	}
+
+	float float_y(int y) {
 		return float(y) / (height / 2) - 1.0f;
 	}
 
@@ -91,9 +103,10 @@ public:
 	Display(
 		const ImageManager& image_manager,
 		const TextManager& text_manager,
-		std::vector<DisplayItem> items,
 		int width,
 		int height);
+
+	void set_items(std::vector<DisplayItem> items) { this->items = items; }
 
 	void draw(int selected_item_id);
 };

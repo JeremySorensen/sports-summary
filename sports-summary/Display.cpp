@@ -1,6 +1,5 @@
 #include <vector>
 #include <gsl/gsl>
-#include "gl.h"
 #include "build_shaders.hpp"
 #include "load_texture.hpp"
 #include "errors.hpp"
@@ -21,10 +20,11 @@ const int EXTRA_SELECTED_WIDTH = 2 * (FRAME_WIDTH + FRAME_PAD);
 Display::Display(
 	const ImageManager& image_manager,
 	const TextManager& text_manager,
-	std::vector<DisplayItem> items,
 	int width,
 	int height):
-    image_manager(image_manager), text_manager(text_manager), items(items), width(width), height(height) {
+    image_manager(image_manager), text_manager(text_manager), width(width), height(height) {
+
+	items.push_back({ 0, "Getting your scores", "", 0 });
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -35,10 +35,10 @@ Display::Display(
 
 	glViewport(0, 0, width, height);
 
-	glGenVertexArrays(1, &vao);
+	glGenVertexArrays(2, vao);
 	glGenBuffers(2, vbo);
 	glGenBuffers(2, ebo);
-	glBindVertexArray(vao);
+	glBindVertexArray(vao[0]);
 
 	glGenTextures(2, texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
@@ -71,32 +71,32 @@ void Display::update_geometry(int selected_item_id) {
 
 	int num_items = items.size();
 	int width_without_selected = width - selected_item_width - EXTRA_SELECTED_WIDTH - PAD;
-	int num_unselected_items = 1 + width_without_selected / (item_width + PAD);
+	int num_unselected_items = 1 + static_cast<int>(width_without_selected / (item_width + PAD));
 	if (num_unselected_items >= num_items - 1) { num_unselected_items = num_items - 1; }
 
 	// The +1 is to draw the item that is partially off the screen
-	int first_id = selected_item_id - num_unselected_items + 1;
+	int first_id = selected_item_id - num_unselected_items + (num_unselected_items == 0 ? 0 : 1);
 	if (first_id < 0) { first_id = 0; }
 	int selected_index = selected_item_id - first_id;
 	int num_after_selected = num_unselected_items - selected_index;
 	// Because we draw a partial extra item, we need to do one less when
 	// the selected item is all the way to the right
-	if (selected_item_id >= num_items - 1) {
+	if (selected_item_id >= num_items - (num_unselected_items == 0 ? 0 : 1)) {
 		num_after_selected = 0;
 	}
 
-	int num_headline_rects = items[selected_item_id].headline.size();
-	int num_long_text_rects = items[selected_item_id].text.size();
-	int num_text_rects = num_headline_rects + num_long_text_rects;
-	int num_text_floats = num_headline_rects * FLOATS_PER_QUAD;
+	size_t num_headline_rects = items[selected_item_id].headline.size();
+	size_t num_long_text_rects = items[selected_item_id].text.size();
+	size_t num_text_rects = num_headline_rects + num_long_text_rects;
+	size_t num_text_floats = num_text_rects * FLOATS_PER_QUAD;
 	text_floats.clear();
 	if (num_text_floats > text_floats.size()) {
 		text_floats.reserve(num_text_floats);
 		text_indices.reserve(num_text_rects * INDICES_PER_QUAD);
 	}
 
-	int num_rects = (num_unselected_items + 2 + QUADS_IN_FRAME);
-	int num_floats = num_rects * FLOATS_PER_QUAD;
+	size_t num_rects = (num_unselected_items + 2 + QUADS_IN_FRAME);
+	size_t num_floats = num_rects * FLOATS_PER_QUAD;
 
 	floats.clear();
 	indices.clear();
@@ -114,8 +114,8 @@ void Display::update_geometry(int selected_item_id) {
 
 	// All the items before the selected item
 	for (int i = 0; i < selected_index; ++i) {
-		int left_px = i * (item_width + PAD) + PAD;
-		int right_px = left_px + item_width;
+		float left_px = i * (item_width + PAD) + PAD;
+		float right_px = left_px + item_width;
 		float left = float_x(left_px);
 		float right = float_x(right_px);
 
@@ -248,8 +248,8 @@ void Display::update_geometry(int selected_item_id) {
 
 	// The items after the selected item
 	for (int i = 0; i < num_after_selected; ++i) {
-		int left_px = i * (item_width + PAD) + frame_out_right_px + PAD;
-		int right_px = left_px + item_width;
+		float left_px = i * (item_width + PAD) + frame_out_right_px + PAD;
+		float right_px = left_px + item_width;
 		float left = float_x(left_px);
 		float right = float_x(right_px);
 
@@ -300,13 +300,6 @@ void Display::update_geometry(int selected_item_id) {
 
 void Display::draw(int selected_item_id) {
 
-	if (image_manager.get_revision() != texture_revision) {
-		texture_revision = image_manager.get_revision();
-
-		auto texture = image_manager.get_texture();
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.bytes.data());
-	}
-
 	update_geometry(selected_item_id);
 
 	bool rebuffer_geometry = false;
@@ -317,11 +310,12 @@ void Display::draw(int selected_item_id) {
 
 	bool rebuffer_text = false;
 	if (text_floats.size() > old_num_text_floats) {
-		old_num_floats = floats.size();
+		old_num_text_floats = text_floats.size();
 		rebuffer_text = true;
 	}
 
 	// Draw geometry
+	glBindVertexArray(vao[1]);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 	if (rebuffer_geometry) {
 		glBufferData(GL_ARRAY_BUFFER, floats.size() * sizeof(float), floats.data(), GL_DYNAMIC_DRAW);
@@ -344,6 +338,14 @@ void Display::draw(int selected_item_id) {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	if (image_manager.get_revision() != texture_revision) {
+		texture_revision = image_manager.get_revision();
+
+		auto texture = image_manager.get_texture();
+		glBindTexture(GL_TEXTURE_2D, texture_id[1]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.bytes.data());
+	}
+
 	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
 	glUseProgram(shader_program);
@@ -351,6 +353,7 @@ void Display::draw(int selected_item_id) {
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
 
 	// Draw Text
+	glBindVertexArray(vao[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	if (rebuffer_text) {
 		glBufferData(GL_ARRAY_BUFFER, text_floats.size() * sizeof(float), text_floats.data(), GL_DYNAMIC_DRAW);
@@ -375,8 +378,7 @@ void Display::draw(int selected_item_id) {
 
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
 
-	//glUseProgram(shader_program);
-	//glBindVertexArray(vao);
+	glUseProgram(shader_program);
 
 	glDrawElements(GL_TRIANGLES, text_indices.size(), GL_UNSIGNED_INT, nullptr);
 }

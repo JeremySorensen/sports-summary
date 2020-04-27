@@ -75,3 +75,50 @@ AlphaImage load_png(const vector<uint8_t>& bytes) {
 AlphaImage load_png_from_file(const char* filename) {
 	return load_png(read_all_bytes(filename));
 }
+
+static void push_byte(vector<uint8_t>& data, uint8_t value) {
+	data.push_back(value);
+}
+
+static void push_short(vector<uint8_t>& data, uint16_t value) {
+	auto ptr = reinterpret_cast<uint8_t*>(&value);
+	data.push_back(ptr[0]);
+	data.push_back(ptr[1]);
+}
+
+static void push_int(vector<uint8_t>& data, uint32_t value) {
+	auto ptr = reinterpret_cast<uint8_t*>(&value);
+	data.push_back(ptr[0]);
+	data.push_back(ptr[1]);
+	data.push_back(ptr[2]);
+	data.push_back(ptr[3]);
+}
+
+void save_bitmap(Image image, std::string filename) {
+	vector<uint8_t> data;
+	push_byte(data, 'B');
+	push_byte(data, 'M');
+	push_int(data, 54 + image.bytes.size()); // file size
+	push_int(data, 0); // two reserved shorts
+	push_int(data, 54); // offset to data
+	push_int(data, 40); // header size
+	push_int(data, image.width); // width
+	push_int(data, image.height); // height
+	push_short(data, 1); // planes
+	push_short(data, 24); // bits per pixel
+	push_int(data, 0); // compression
+	push_int(data, 0); // unused size
+	push_int(data, 0); // unused x px/meter
+	push_int(data, 0); // unused y px/meter
+	push_int(data, 0); // unused colors used
+	push_int(data, 0); // important colors (all)
+
+	for (int i = 0; i < image.width * image.height * 3; i += 3) {
+		data.push_back(image.bytes[i + 2]);
+		data.push_back(image.bytes[i + 1]);
+		data.push_back(image.bytes[i + 0]);
+	}
+
+	std::ofstream out_file(filename, std::ios::binary);
+	out_file.write(reinterpret_cast<char*>(data.data()), data.size());
+}

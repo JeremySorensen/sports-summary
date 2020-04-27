@@ -1,14 +1,21 @@
 #include <iostream>
-#include <ctime>
+#include <string>
 #include <gsl/gsl>
-#include "gl.h"
-#include "Display.hpp"
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 #include "errors.hpp"
-#include "Json.hpp"
+#include "utils.hpp"
+#include "Downloader.hpp"
+#include "get_games_from_json.hpp"
+#include "Display.hpp"
+
+using std::string;
+using std::vector;
 
 struct Info {
-    int num_ids;
-    int current_id;
+    size_t num_ids;
+    size_t current_id;
 };
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
@@ -32,6 +39,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 int main()
 {
+    string date_string = get_today_date_string();
+    // There aren't any picture right now so used the canned date:
+    date_string = "2018-05-9";
+    string url_start = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=";
+    string url_suffix = "&sportId=1";
+    string url = url_start + date_string + url_suffix;
+
+
     glfwInit();
     auto glfw_terminator = gsl::finally([] { glfwTerminate(); });
 
@@ -65,54 +80,66 @@ int main()
         ui_error("Error loading OpenGL", __FILE__, __LINE__);
     }
 
-    ImageManager image_manager("texture.jpg");
+    ImageManager image_manager("texture.jpeg");
     TextManager text_manager("text_atlas.png");
+    Display display{ image_manager, text_manager, width, height };
+    display.draw(0);
 
-    time_t rawtime;
-    tm timeinfo;
-    char buffer[11];
+    glfwSwapBuffers(window);
 
-    time(&rawtime);
-    localtime_s(&timeinfo, &rawtime);
+    Downloader downloader;
 
-    strftime(buffer, 80, "%F", &timeinfo);
+    vector<uint8_t> json_data;
 
-    std::string date_string{ buffer };
+    downloader.download_file(url, json_data);
 
-    // no pictures today, use old date
-    date_string = "2018-06-10";
+    auto games = get_games_from_json(json_data);
 
-    Json json;
-    auto games = json.get_games(date_string);
+    image_manager.set_max_images(games.size());
 
-    std::vector<DisplayItem> items;
+    vector<vector<uint8_t>> image_buffers; // this is the owned version
+    image_buffers.reserve(games.size());
+
+    vector<DisplayItem> items;
     items.reserve(games.size());
 
-    int id = 0;
-    for (auto&& game : games) {
-
-        std::string headline;
-        if (game.did_home_win) {
-            headline = game.home_team + " beat " + game.away_team + " at home " 
-                + std::to_string(game.home_score) + "-" + std::to_string(game.away_score);
-        }
-        else {
-            headline = game.away_team + " win " + std::to_string(game.away_score) + "-"
-                + std::to_string(game.home_score) + " at " + game.home_team;
-        }
-
-        items.push_back({ id, headline, game.blurb, id });
-        ++id;
+    for (size_t id = 0; id < games.size(); ++id) {
+        image_buffers.push_back(vector<uint8_t>{});
+        downloader.add_file(games[id].url, image_buffers[id]);
+        items.push_back(games[id].item);
     }
+    downloader.start_multi_file();
 
-    Display display{ image_manager, text_manager, items, width, height };
+    display.set_items(items);
 
     Info info{ items.size(), 0 };
     glfwSetWindowUserPointer(window, &info);
 
+    std::unordered_set<int> images_left;
+    images_left.reserve(items.size());
+    for (size_t i = 0; i < items.size(); ++i) {
+        images_left.insert(static_cast<int>(i));
+    }
+    int try_again = 0;
+    const int NUM_TRIES = 30;
     while (!glfwWindowShouldClose(window))
     {
-        glfwPollEvents();
+        if (try_again < NUM_TRIES && images_left.size() > 0) {
+
+            for (int image_id : downloader.get_finished_files()) {
+                image_manager.add_jpeg(image_id, image_buffers[image_id]);
+                images_left.erase(image_id);
+            }
+            ++try_again;
+            if (try_again == NUM_TRIES) {
+                for (int id : images_left) {
+                    if (image_buffers[id].size() > 1000) {
+                        image_manager.add_jpeg(id, image_buffers[id]);
+                    }
+                }
+            }
+        }
+        glfwWaitEventsTimeout(0.15);
 
         display.draw(info.current_id);
 

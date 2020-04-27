@@ -39,8 +39,8 @@ class TextManager {
 public:
 	TextManager(const char* filename) : 
 		texture(load_png_from_file(filename)),
-		TEXTURE_HEIGHT_F(TEXTURE_HEIGHT),
-		TEXTURE_WIDTH_F(TEXTURE_WIDTH) { }
+		TEXTURE_HEIGHT_F(static_cast<float>(TEXTURE_HEIGHT)),
+		TEXTURE_WIDTH_F(static_cast<float>(TEXTURE_WIDTH)) { }
 
 	AlphaImage get_texture() const {
 		return texture;
@@ -73,6 +73,6 @@ public:
 		}
 	}
 
-	float get_glyph_height() const { return ROW_HEIGHT; }
+	float get_glyph_height() const { return static_cast<float>(ROW_HEIGHT); }
 
 };
