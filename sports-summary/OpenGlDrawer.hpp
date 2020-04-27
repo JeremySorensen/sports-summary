@@ -13,8 +13,8 @@ class OpenGlDrawer {
 	GLuint ebo[2];
 	GLuint texture_id[2];
 
-	int old_num_floats = 0;
-	int old_num_text_floats = 0;
+	size_t old_num_floats = 0;
+	size_t old_num_text_floats = 0;
 	int texture_revision = -1;
 
 	GLuint load_shader(const char* filename, GLuint shader_type);

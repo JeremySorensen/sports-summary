@@ -90,7 +90,7 @@
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x86\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x86\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include;$(ProjectDir)..\third_party\stb_image</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -117,7 +117,7 @@ copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x64\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x64\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include;$(ProjectDir)..\third_party\stb_image</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,7 +143,7 @@ copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x86\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x86\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include;$(ProjectDir)..\third_party\stb_image</AdditionalIncludeDirectories>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -173,7 +173,7 @@ copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x64\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\third_party\glfw-x64\include;$(ProjectDir)..\third_party\glad\include;$(ProjectDir)..\third_party\GSL\include;$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\include;$(ProjectDir)..\third_party\json\single_include;$(ProjectDir)..\third_party\stb_image</AdditionalIncludeDirectories>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -217,7 +217,6 @@ copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
     <ClInclude Include="get_games_from_json.hpp" />
     <ClInclude Include="load_image.hpp" />
     <ClInclude Include="OpenGlDrawer.hpp" />
-    <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextManager.hpp" />
     <ClInclude Include="TextureManager.hpp" />
     <ClInclude Include="utils.hpp" />

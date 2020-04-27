@@ -87,7 +87,6 @@ void Downloader::start_multi_file() {
 }
 
 vector<int> Downloader::get_finished_files() {
-    int events;
     int running_handles;
 
     auto result = curl_multi_perform(multi_curl, &running_handles);
