@@ -73,8 +73,6 @@ public:
 		}
 
 		start_x += new_image.width;
-
-		save_bitmap(texture, "debug_tex_manager_" + std::to_string(num_images) + ".bmp");
 	}
 
 	bool has_all_images() const {
