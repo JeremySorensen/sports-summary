@@ -98,6 +98,15 @@
       <AdditionalDependencies>glfw3.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\third_party\glfw-x86\lib-vc2019;$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\lib</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(ProjectDir)..\third_party\glfw-x86\lib-vc2019\glfw3.dll" "$(TargetDir)"
+copy "$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\libcurl.dll" "$(TargetDir)"
+copy "$(ProjectDir)texture.jpeg" "$(TargetDir)"
+copy "$(ProjectDir)text_atlas.png" "$(TargetDir)"
+if not exist "$(TargetDir)shaders\" mkdir "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\vertex.glsl" "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -116,6 +125,15 @@
       <AdditionalLibraryDirectories>$(ProjectDir)..\third_party\glfw-x64\lib-vc2019;$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(ProjectDir)..\third_party\glfw-x64\lib-vc2019\glfw3.dll" "$(TargetDir)"
+copy "$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\libcurl.dll" "$(TargetDir)"
+copy "$(ProjectDir)texture.jpeg" "$(TargetDir)"
+copy "$(ProjectDir)text_atlas.png" "$(TargetDir)"
+if not exist "$(TargetDir)shaders\" mkdir "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\vertex.glsl" "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -137,6 +155,15 @@
       <AdditionalDependencies>glfw3.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\third_party\glfw-x86\lib-vc2019;$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\lib</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(ProjectDir)..\third_party\glfw-x86\lib-vc2019\glfw3.dll" "$(TargetDir)"
+copy "$(ProjectDir)..\third_party\libcurl-x86-ipv6-sspi-winssl\libcurl.dll" "$(TargetDir)"
+copy "$(ProjectDir)texture.jpeg" "$(TargetDir)"
+copy "$(ProjectDir)text_atlas.png" "$(TargetDir)"
+if not exist "$(TargetDir)shaders\" mkdir "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\vertex.glsl" "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -158,6 +185,15 @@
       <AdditionalLibraryDirectories>$(ProjectDir)..\third_party\glfw-x64\lib-vc2019;$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(ProjectDir)..\third_party\glfw-x64\lib-vc2019\glfw3.dll" "$(TargetDir)"
+copy "$(ProjectDir)..\third_party\libcurl-x64-ipv6-sspi-winssl\libcurl.dll" "$(TargetDir)"
+copy "$(ProjectDir)texture.jpeg" "$(TargetDir)"
+copy "$(ProjectDir)text_atlas.png" "$(TargetDir)"
+if not exist "$(TargetDir)shaders\" mkdir "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\vertex.glsl" "$(TargetDir)shaders\"
+copy "$(ProjectDir)shaders\fragment.glsl" "$(TargetDir)shaders\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\third_party\glad\src\glad.c" />
