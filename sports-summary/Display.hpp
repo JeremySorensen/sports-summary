@@ -36,8 +36,6 @@ class Display {
 	std::vector<DisplayItem> items;
 	std::vector<float> floats;
 	std::vector<unsigned int> indices;
-	std::vector<float> text_floats;
-	std::vector<unsigned int> text_indices;
 	int width;
 	int height;
 
