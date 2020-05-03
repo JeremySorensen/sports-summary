@@ -13,8 +13,8 @@ class OpenGlDrawer {
 
 	GLuint shader_program;
 	GLuint vao;
-	GLuint vbo[2];
-	GLuint ebo[2];
+	GLuint vbo;
+	GLuint ebo;
 	GLuint texture_id[2];
 
 	size_t old_num_floats = 0;
@@ -30,11 +30,6 @@ public:
 
 	void draw(
 		const std::vector<float>& floats,
-		const std::vector<float>& text_floats,
 		const std::vector<unsigned int>& indices,
-		const std::vector<unsigned int>& text_indices,
 		const ImageManager& image_manager);
-
-	
-
 };

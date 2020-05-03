@@ -24,13 +24,13 @@ OpenGlDrawer::OpenGlDrawer(int width, int height, AlphaImage text_image) {
 	glViewport(0, 0, width, height);
 
 	glGenVertexArrays(1, &vao);
-	glGenBuffers(2, vbo);
-	glGenBuffers(2, ebo);
+	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &ebo);
 	glGenTextures(2, texture_id);
 
-	// Text setup
-
 	glBindVertexArray(vao);
+
+	// Text texure setup
 
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
 
@@ -54,7 +54,7 @@ OpenGlDrawer::OpenGlDrawer(int width, int height, AlphaImage text_image) {
 		text_image.bytes.data()
 	);
 
-	// Geometry setup
+	// Geometry texture setup
 
 	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
@@ -62,50 +62,52 @@ OpenGlDrawer::OpenGlDrawer(int width, int height, AlphaImage text_image) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// mutli-textue setup
+	glUseProgram(shader_program);
+	glUniform1i(glGetUniformLocation(shader_program, "texture_0"), 0);
+	glUniform1i(glGetUniformLocation(shader_program, "texture_1"), 1);
 }
 
 void OpenGlDrawer::draw(
 	const std::vector<float>& floats,
-	const std::vector<float>& text_floats,
 	const std::vector<unsigned int>& indices,
-	const std::vector<unsigned int>& text_indices,
 	const ImageManager& image_manager) {
 
-	bool rebuffer_geometry = false;
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	bool rebuffer = false;
 	if (floats.size() > old_num_floats) {
+		rebuffer = true;
+	}
+
+	if (rebuffer) {
 		old_num_floats = floats.size();
-		rebuffer_geometry = true;
-	}
-
-	bool rebuffer_text = false;
-	if (text_floats.size() > old_num_text_floats) {
-		old_num_text_floats = text_floats.size();
-		rebuffer_text = true;
-	}
-
-	// Draw geometry
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	if (rebuffer_geometry) {
 		glBufferData(GL_ARRAY_BUFFER, floats.size() * sizeof(float), floats.data(), GL_DYNAMIC_DRAW);
 	}
 	else {
 		glBufferSubData(GL_ARRAY_BUFFER, 0, floats.size() * sizeof(float), floats.data());
 	}
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[1]);
-	if (rebuffer_geometry) {
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(4 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	if (rebuffer) {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
 	}
 	else {
 		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(unsigned int), indices.data());
 	}
 
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture_id[1]);
 
 	if (image_manager.get_revision() != texture_revision) {
@@ -116,38 +118,12 @@ void OpenGlDrawer::draw(
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.bytes.data());
 	}
 
-	glUseProgram(shader_program);
-
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
-
-	// Draw Text
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	if (rebuffer_text) {
-		glBufferData(GL_ARRAY_BUFFER, text_floats.size() * sizeof(float), text_floats.data(), GL_DYNAMIC_DRAW);
-	}
-	else {
-		glBufferSubData(GL_ARRAY_BUFFER, 0, text_floats.size() * sizeof(float), text_floats.data());
-	}
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[0]);
-	if (rebuffer_text) {
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, text_indices.size() * sizeof(unsigned int), text_indices.data(), GL_DYNAMIC_DRAW);
-	}
-	else {
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, text_indices.size() * sizeof(unsigned int), text_indices.data());
-	}
-
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture_id[0]);
 
 	glUseProgram(shader_program);
 
-	glDrawElements(GL_TRIANGLES, text_indices.size(), GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
 }
 
 GLuint OpenGlDrawer::build_shaders(const char* vertex_shader_file, const char* fragment_shader_file) {

@@ -10,13 +10,14 @@
 
 using std::vector;
 
-const int FLOATS_PER_QUAD = 16; // 4 x,y points + 4 s,t points
-const int QUADS_IN_FRAME = 8;
-const int INDICES_PER_QUAD = 6;
-const int PAD = 16;
-const int FRAME_WIDTH = 8;
-const int FRAME_PAD = 4;
-const int TEXT_PAD = 4;
+const int FLOATS_PER_POINT = 5; // x, y, s, t, texture
+const int FLOATS_PER_QUAD = 4 * FLOATS_PER_POINT;
+const int QUADS_IN_FRAME = 8; // 4 sides, 4 corners
+const int INDICES_PER_QUAD = 6; // 2 triangles & 3 points (indices) per tri
+const int PAD = 16; // pixel padding between items
+const int FRAME_WIDTH = 8; // pixel width of frame sides
+const int FRAME_PAD = 4; // space between frame and selected item
+const int TEXT_PAD = 4; // space between text and frame
 
 const int EXTRA_SELECTED_WIDTH = 2 * (FRAME_WIDTH + FRAME_PAD);
 
@@ -63,25 +64,9 @@ Display::TextLocations Display::update_geometry(int selected_item_id) {
 	size_t num_long_text_rects = items[selected_item_id].text.size();
 	size_t num_text_rects = num_headline_rects + num_long_text_rects;
 	size_t num_text_floats = num_text_rects * FLOATS_PER_QUAD;
-	text_floats.clear();
-	text_indices.clear();
-	if (num_text_floats > text_floats.size()) {
-		text_floats.reserve(num_text_floats);
-		text_indices.reserve(num_text_rects * INDICES_PER_QUAD);
-	}
 
-	size_t num_rects = (num_unselected_items + 2 + QUADS_IN_FRAME);
-	size_t num_floats = num_rects * FLOATS_PER_QUAD;
 
-	floats.clear();
-	indices.clear();
-
-	if (num_floats > floats.size()) {
-		floats.reserve(num_floats);
-		indices.reserve(num_rects * INDICES_PER_QUAD);
-	}
-
-	int index = add_quad(0, { -1.0f, 1.0f, -1.0f, 1.0f }, image_manager.get_background_tex());
+	add_quad({ -1.0f, 1.0f, -1.0f, 1.0f }, image_manager.get_background_tex(), 0);
 	float top_px = (height + item_height) / 2;
 	float bot_px = top_px - item_height;
 	float top = float_y(top_px);
@@ -96,7 +81,7 @@ Display::TextLocations Display::update_geometry(int selected_item_id) {
 
 		auto tex = image_manager.get_item_tex(items[i + first_id].image_id);
 
-		index = add_quad(index, { left, right, top, bot }, tex);
+		add_quad({ left, right, top, bot }, tex, 0);
 	}
 
 	// The selected item and frame
@@ -159,66 +144,66 @@ Display::TextLocations Display::update_geometry(int selected_item_id) {
 	float frame_out_bot = float_y(frame_out_bot_px);
 
 	// top right frame corner
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_in_right, frame_out_right, frame_out_top, frame_in_top },
-		frame_right_top_tex
+		frame_right_top_tex,
+		0
 	);
 
 	// bottom right frame corner
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_in_right, frame_out_right, frame_in_bot, frame_out_bot },
-		frame_right_bot_tex
+		frame_right_bot_tex,
+		0
 	);
 
 	// bottom left frame corner
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_out_left, frame_in_left, frame_in_bot, frame_out_bot },
-		frame_left_bot_tex
+		frame_left_bot_tex,
+		0
 	);
 
 	// top left frame corner
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_out_left, frame_in_left, frame_out_top, frame_in_top },
-		frame_left_top_tex
+		frame_left_top_tex,
+		0
 	);
 
 	// left frame
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_out_left, frame_in_left, frame_in_top, frame_in_bot },
-		frame_vert_tex
+		frame_vert_tex,
+		0
 	);
 
 	// right frame
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_in_right, frame_out_right, frame_in_top, frame_in_bot },
-		frame_vert_tex
+		frame_vert_tex,
+		0
 	);
 
 	// top frame
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_in_left, frame_in_right, frame_out_top, frame_in_top },
-		frame_horz_tex
+		frame_horz_tex,
+		0
 	);
 
 	// bot frame
-	index = add_quad(
-		index,
+	add_quad(
 		{ frame_in_left, frame_in_right, frame_in_bot, frame_out_bot },
-		frame_horz_tex
+		frame_horz_tex,
+		0
 	);
 
 	// selected image
-	index = add_quad(
-		index,
+	add_quad(
 		{ selected_left, selected_right, selected_top, selected_bot },
-		selected_tex
+		selected_tex,
+		0
 	);
 
 	// The items after the selected item
@@ -230,11 +215,7 @@ Display::TextLocations Display::update_geometry(int selected_item_id) {
 
 		auto tex = image_manager.get_item_tex(items[i + selected_item_id + 1].image_id);
 
-		index = add_quad(
-			index,
-			{ left, right, top, bot },
-			tex
-		);
+		add_quad({ left, right, top, bot }, tex, 0);
 	}
 
 	return TextLocations{ frame_out_left_px, frame_out_top_px, frame_out_bot_px };
@@ -252,10 +233,10 @@ void Display::update_text(int selected_item_id, TextLocations locations) {
 	int index = 0;
 	for (auto&& glyph : items[selected_item_id].headline) { 
 		float glyph_right_px = glyph_left_px + text_manager.get_glyph_width(glyph);
-		index = add_text_quad(
-			index,
+		add_quad(
 			{ float_x(glyph_left_px), float_x(glyph_right_px), headline_top, headline_bot },
-			text_manager.get_glyph_tex(glyph)
+			text_manager.get_glyph_tex(glyph),
+			1
 		);
 		glyph_left_px = glyph_right_px;
 	}
@@ -268,19 +249,63 @@ void Display::update_text(int selected_item_id, TextLocations locations) {
 	glyph_left_px = locations.text_x;
 	for (auto&& glyph : items[selected_item_id].text) {
 		float glyph_right_px = glyph_left_px + text_manager.get_glyph_width(glyph);
-		index = add_text_quad(
-			index,
+		add_quad(
 			{ float_x(glyph_left_px), float_x(glyph_right_px), text_top, text_bot },
-			text_manager.get_glyph_tex(glyph)
-			);
+			text_manager.get_glyph_tex(glyph),
+			1
+		);
 		glyph_left_px = glyph_right_px;
+	}
+}
+
+void Display::update_indices() {
+	//indices.clear();
+	//auto num_points = floats.size() / FLOATS_PER_POINT;
+	//for (size_t index = 0; index < num_points; index += 4) {
+	//	indices.push_back(index + 0);
+	//	indices.push_back(index + 1);
+	//	indices.push_back(index + 3);
+	//	indices.push_back(index + 1);
+	//	indices.push_back(index + 2);
+	//	indices.push_back(index + 3);
+	//}
+
+	// above code clears indices and re-adds all of them, below code
+	// adds any needed, or removes any extra instead.
+
+	auto num_points = floats.size() / FLOATS_PER_POINT;
+
+	auto num_indexed_quads = indices.size() / INDICES_PER_QUAD;
+	auto num_indexed_floats = num_indexed_quads * FLOATS_PER_QUAD;
+	
+	if (num_indexed_floats < floats.size()) {
+		// add indices
+		int start_index = num_indexed_quads * 4; // 4 points per quad
+		for (int index = start_index; index < num_points; index += 4) {
+			indices.push_back(index + 0);
+			indices.push_back(index + 1);
+			indices.push_back(index + 3);
+			indices.push_back(index + 1);
+			indices.push_back(index + 2);
+			indices.push_back(index + 3);
+		}
+	}
+	else if (num_indexed_floats > floats.size()) {
+	    // remove extra indices
+		auto num_indices = floats.size() / FLOATS_PER_QUAD * INDICES_PER_QUAD;
+		indices.resize(num_indices);
+	}
+	else {
+		// have correct number of indices, do nothing
 	}
 }
 
 void Display::draw(int selected_item_id) {
 
+	floats.clear();
 	auto locations = update_geometry(selected_item_id);
 	update_text(selected_item_id, locations);
+	update_indices();
 
-	drawer.draw(floats, text_floats, indices, text_indices, image_manager);
+	drawer.draw(floats, indices, image_manager);
 }
