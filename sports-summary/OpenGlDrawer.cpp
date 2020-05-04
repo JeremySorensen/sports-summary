@@ -8,7 +8,6 @@
 #include "utils.hpp"
 #include "errors.hpp"
 
-
 using std::string;
 
 const int MESSAGE_MAX_SIZE = 512;
